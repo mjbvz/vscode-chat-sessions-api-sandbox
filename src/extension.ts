@@ -1,19 +1,22 @@
-import * as vscode from 'vscode';
+import * as vscode from "vscode";
 
 /**
  * URI scheme used for our chat sessions
- * 
+ *
  * This is used to identify the chat sessions and open them using our custom editor.
  */
-const sessionScheme = 'my-session';
+const sessionScheme = "my-session";
 
 /**
  * Use a TextDocumentContentProvider to provide content for chat sessions.
- * 
+ *
  * This is could also be implemented using a custom file system.
  */
 class MySessionContentProvider implements vscode.TextDocumentContentProvider {
-	provideTextDocumentContent(uri: vscode.Uri, _token: vscode.CancellationToken): string {
+	provideTextDocumentContent(
+		uri: vscode.Uri,
+		_token: vscode.CancellationToken
+	): string {
 		// Return some basic content for the session
 		// Can be empty if all we need is info in the uri
 		return `Chat Session: ${uri.path}\n\nThis is the content of the session.`;
@@ -24,16 +27,24 @@ class MySessionContentProvider implements vscode.TextDocumentContentProvider {
  * Create a custom editor for displaying chat sessions.
  */
 class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
-	openCustomDocument(uri: vscode.Uri, _openContext: vscode.CustomDocumentOpenContext, _token: vscode.CancellationToken): vscode.CustomDocument {
+	openCustomDocument(
+		uri: vscode.Uri,
+		_openContext: vscode.CustomDocumentOpenContext,
+		_token: vscode.CancellationToken
+	): vscode.CustomDocument {
 		return {
 			uri,
-			dispose: () => { }
+			dispose: () => { },
 		};
 	}
 
-	resolveCustomEditor(document: vscode.CustomDocument, webviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): void {
+	resolveCustomEditor(
+		document: vscode.CustomDocument,
+		webviewPanel: vscode.WebviewPanel,
+		_token: vscode.CancellationToken
+	): void {
 		webviewPanel.webview.options = {
-			enableScripts: false
+			enableScripts: false,
 		};
 
 		webviewPanel.webview.html = this.getHtmlContent();
@@ -70,11 +81,13 @@ class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
 }
 
 /**
- * Provides the list of chat sessions 
+ * Provides the list of chat sessions
  */
 class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
-	private readonly _onDidChangeChatSessionItems = new vscode.EventEmitter<void>();
-	readonly onDidChangeChatSessionItems = this._onDidChangeChatSessionItems.event;
+	private readonly _onDidChangeChatSessionItems =
+		new vscode.EventEmitter<void>();
+	readonly onDidChangeChatSessionItems =
+		this._onDidChangeChatSessionItems.event;
 
 	private readonly _onDidCommitChatSessionItem = new vscode.EventEmitter<{
 		original: vscode.ChatSessionItem;
@@ -88,41 +101,43 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 		// Create some sample sessions
 		this.sessions = [
 			{
-				id: 'session-1',
-				resource: vscode.Uri.parse('my-session:/session-1'),
-				label: 'Chat Session 1',
-				description: 'First example session',
+				id: "session-1",
+				resource: vscode.Uri.parse("my-session:/session-1"),
+				label: "Chat Session 1",
+				description: "First example session",
 				status: vscode.ChatSessionStatus.Completed,
 				timing: {
 					startTime: Date.now() - 3600000, // 1 hour ago
-					endTime: Date.now() - 3000000
-				}
+					endTime: Date.now() - 3000000,
+				},
 			},
 			{
-				id: 'session-2',
-				resource: vscode.Uri.parse('my-session:/session-2'),
-				label: 'Chat Session 2',
-				description: 'Second example session',
+				id: "session-2",
+				resource: vscode.Uri.parse("my-session:/session-2"),
+				label: "Chat Session 2",
+				description: "Second example session",
 				status: vscode.ChatSessionStatus.InProgress,
 				timing: {
-					startTime: Date.now() - 1800000 // 30 minutes ago
-				}
+					startTime: Date.now() - 1800000, // 30 minutes ago
+				},
 			},
 			{
-				id: 'session-3',
-				resource: vscode.Uri.parse('my-session:/session-3'),
-				label: 'Chat Session 3',
-				description: 'Third example session',
+				id: "session-3",
+				resource: vscode.Uri.parse("my-session:/session-3"),
+				label: "Chat Session 3",
+				description: "Third example session",
 				status: vscode.ChatSessionStatus.Failed,
 				timing: {
 					startTime: Date.now() - 7200000, // 2 hours ago
-					endTime: Date.now() - 6000000
-				}
-			}
+					endTime: Date.now() - 6000000,
+				},
+			},
 		];
 	}
 
-	async provideChatSessionItems(_token: vscode.CancellationToken): Promise<vscode.ChatSessionItem[]> {
+	async provideChatSessionItems(
+		_token: vscode.CancellationToken
+	): Promise<vscode.ChatSessionItem[]> {
 		return this.sessions;
 	}
 }
@@ -130,15 +145,26 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 export function activate(context: vscode.ExtensionContext) {
 	// Register text document content provider for my-session scheme
 	context.subscriptions.push(
-		vscode.workspace.registerTextDocumentContentProvider(sessionScheme, new MySessionContentProvider()));
+		vscode.workspace.registerTextDocumentContentProvider(
+			sessionScheme,
+			new MySessionContentProvider()
+		)
+	);
 
 	// Register custom editor for showing our sessions
 	const customEditor = new MySessionCustomEditor();
 	context.subscriptions.push(
-		vscode.window.registerCustomEditorProvider('mySession.editor', customEditor));
+		vscode.window.registerCustomEditorProvider("mySession.editor", customEditor)
+	);
 
 	// Register the chat session item provider
 	const sessionProvider = new MyChatSessionItemProvider();
 	context.subscriptions.push(
-		vscode.chat.registerChatSessionItemProvider(sessionScheme, sessionProvider));
+		vscode.chat.registerChatSessionItemProvider(sessionScheme, sessionProvider)
+	);
+
+	// Register commands
+	vscode.commands.registerCommand("chat-session-sandbox.exampleInlineAction", () => {
+		vscode.window.showWarningMessage("Example inline action executed!");
+	});
 }

@@ -1,5 +1,5 @@
 {
-	"name": "proposed-api-sample",
+	"name": "chat-session-sandbox",
 	"displayName": "proposed-api-sample",
 	"description": "Sample showing how to use Proposed API",
 	"version": "0.0.1",
@@ -39,7 +39,23 @@
 					}
 				]
 			}
-		]
+		],
+		"commands": [
+			{
+				"command": "chat-session-sandbox.exampleInlineAction",
+				"title": "Example inline action",
+				"icon": "$(squirrel)"
+			}
+		],
+		"menus": {
+			"chat/chatSessions": [
+				{
+					"command": "chat-session-sandbox.exampleInlineAction",
+					"when": "chatSessionType == my-session",
+					"group": "inline@1"
+				}
+			]
+		}
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",
