@@ -102,7 +102,7 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 		this.sessions = [
 			{
 				id: "session-1",
-				resource: vscode.Uri.parse("my-session:/session-1"),
+				resource: vscode.Uri.parse("my-session:/session-1.my-custom-ext"),
 				label: "Chat Session 1",
 				description: "First example session",
 				status: vscode.ChatSessionStatus.Completed,
@@ -113,7 +113,7 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 			},
 			{
 				id: "session-2",
-				resource: vscode.Uri.parse("my-session:/session-2"),
+				resource: vscode.Uri.parse("my-session:/session-2.my-custom-ext"),
 				label: "Chat Session 2",
 				description: "Second example session",
 				status: vscode.ChatSessionStatus.InProgress,
@@ -123,7 +123,7 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 			},
 			{
 				id: "session-3",
-				resource: vscode.Uri.parse("my-session:/session-3"),
+				resource: vscode.Uri.parse("my-session:/session-3.my-custom-ext"),
 				label: "Chat Session 3",
 				description: "Third example session",
 				status: vscode.ChatSessionStatus.Failed,

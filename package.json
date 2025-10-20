@@ -21,6 +21,19 @@
 		"chatSessionsProvider"
 	],
 	"contributes": {
+		"languages": [
+			{
+				"id": "_my-session-lang",
+				"aliases": [],
+				"filenamePatterns": [
+					"*.my-custom-ext"
+				],
+				"icon": {
+					"light": "./icon.png",
+					"dark": "./icon.png"
+				}
+			}
+		],
 		"chatSessions": [
 			{
 				"type": "my-session",
