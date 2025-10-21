@@ -43,6 +43,8 @@ class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
 		webviewPanel: vscode.WebviewPanel,
 		_token: vscode.CancellationToken
 	): void {
+		webviewPanel.title = `Chat Session (${document.uri.path.slice(1)})`;
+
 		webviewPanel.webview.options = {
 			enableScripts: false,
 		};
