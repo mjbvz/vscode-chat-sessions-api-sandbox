@@ -45,9 +45,29 @@
 				"command": "chat-session-sandbox.exampleInlineAction",
 				"title": "Example inline action",
 				"icon": "$(squirrel)"
+			},
+			{
+				"command": "chat-session-sandbox.exampleCreateAction1",
+				"title": "Example create action 1",
+				"icon": "$(plus)"
+			},
+			{
+				"command": "chat-session-sandbox.exampleCreateAction2",
+				"title": "Example create action 2",
+				"icon": "$(plus)"
 			}
 		],
 		"menus": {
+			"chatSessions/newSession": [
+				{
+					"command": "chat-session-sandbox.exampleCreateAction1",
+					"when": "chatSessionType == my-session"
+				},
+				{
+					"command": "chat-session-sandbox.exampleCreateAction2",
+					"when": "chatSessionType == my-session"
+				}
+			],
 			"chat/chatSessions": [
 				{
 					"command": "chat-session-sandbox.exampleInlineAction",

@@ -27,6 +27,11 @@ class MySessionContentProvider implements vscode.TextDocumentContentProvider {
  * Create a custom editor for displaying chat sessions.
  */
 class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
+
+	constructor(
+		private readonly context: vscode.ExtensionContext
+	) { }
+
 	openCustomDocument(
 		uri: vscode.Uri,
 		_openContext: vscode.CustomDocumentOpenContext,
@@ -43,7 +48,8 @@ class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
 		webviewPanel: vscode.WebviewPanel,
 		_token: vscode.CancellationToken
 	): void {
-		webviewPanel.title = `Chat Session (${document.uri.path.slice(1)})`;
+		webviewPanel.title = `my Chat Session`;
+		webviewPanel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'icon.png');
 
 		webviewPanel.webview.options = {
 			enableScripts: false,
@@ -154,7 +160,7 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Register custom editor for showing our sessions
-	const customEditor = new MySessionCustomEditor();
+	const customEditor = new MySessionCustomEditor(context);
 	context.subscriptions.push(
 		vscode.window.registerCustomEditorProvider("mySession.editor", customEditor)
 	);
@@ -168,5 +174,13 @@ export function activate(context: vscode.ExtensionContext) {
 	// Register commands
 	vscode.commands.registerCommand("chat-session-sandbox.exampleInlineAction", () => {
 		vscode.window.showWarningMessage("Example inline action executed!");
+	});
+
+	vscode.commands.registerCommand("chat-session-sandbox.exampleCreateAction1", () => {
+		vscode.window.showWarningMessage("Example create action 1 executed!");
+	});
+
+	vscode.commands.registerCommand("chat-session-sandbox.exampleCreateAction2", () => {
+		vscode.window.showWarningMessage("Example create action 2 executed!");
 	});
 }
