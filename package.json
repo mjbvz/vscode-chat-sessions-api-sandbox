@@ -42,6 +42,11 @@
 		],
 		"commands": [
 			{
+				"command": "chat-session-sandbox.test-move",
+				"title": "Test Move Chat Session",
+				"icon": "$(arrow-right)"
+			},
+			{
 				"command": "chat-session-sandbox.exampleInlineAction",
 				"title": "Example inline action",
 				"icon": "$(squirrel)"

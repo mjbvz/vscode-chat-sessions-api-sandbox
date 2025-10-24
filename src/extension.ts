@@ -7,52 +7,119 @@ import * as vscode from "vscode";
  */
 const sessionScheme = "my-session";
 
+const sampleSessions: vscode.ChatSessionItem[] = [
+	{
+		resource: vscode.Uri.parse("my-session:/session-1"),
+		label: "Chat Session 1",
+		description: "First example session",
+		status: vscode.ChatSessionStatus.Completed,
+		timing: {
+			startTime: Date.now() - 3600000, // 1 hour ago
+			endTime: Date.now() - 3000000,
+		},
+	},
+	{
+		resource: vscode.Uri.parse("my-session:/session-2"),
+		label: "Chat Session 2",
+		description: "Second example session",
+		status: vscode.ChatSessionStatus.InProgress,
+		timing: {
+			startTime: Date.now() - 1800000, // 30 minutes ago
+		},
+	},
+	{
+		resource: vscode.Uri.parse("my-session:/session-3"),
+		label: "Chat Session 3",
+		description: "Third example session",
+		status: vscode.ChatSessionStatus.Failed,
+		timing: {
+			startTime: Date.now() - 7200000, // 2 hours ago
+			endTime: Date.now() - 6000000,
+		},
+	},
+];
+
 /**
- * Use a TextDocumentContentProvider to provide content for chat sessions.
- *
- * This is could also be implemented using a custom file system.
+ * Simple readonly file system for chat sessions.
  */
-class MySessionContentProvider implements vscode.TextDocumentContentProvider {
-	provideTextDocumentContent(
-		uri: vscode.Uri,
-		_token: vscode.CancellationToken
-	): string {
-		// Return some basic content for the session
-		// Can be empty if all we need is info in the uri
-		return `Chat Session: ${uri.path}\n\nThis is the content of the session.`;
+class MySessionFileSystem implements vscode.FileSystemProvider {
+	private readonly _onDidChangeFile = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+	readonly onDidChangeFile = this._onDidChangeFile.event;
+
+	private readonly _onDidMoveFile = new vscode.EventEmitter<void>();
+	readonly onDidMoveFile = this._onDidMoveFile.event;
+
+	watch(_uri: vscode.Uri): vscode.Disposable {
+		// No-op for readonly file system
+		return new vscode.Disposable(() => { });
+	}
+
+	stat(uri: vscode.Uri): vscode.FileStat {
+		for (const session of sampleSessions) {
+			if (session.resource.toString() === uri.toString()) {
+				return {
+					type: vscode.FileType.File,
+					ctime: Date.now(),
+					mtime: Date.now(),
+					size: 0,
+				};
+			}
+		}
+		throw vscode.FileSystemError.FileNotFound(uri);
+	}
+
+	readDirectory(_uri: vscode.Uri): [string, vscode.FileType][] {
+		// Not needed for our use case
+		return [];
+	}
+
+	createDirectory(_uri: vscode.Uri): void {
+		throw vscode.FileSystemError.NoPermissions('readonly');
+	}
+
+	readFile(uri: vscode.Uri): Uint8Array {
+		for (const session of sampleSessions) {
+			if (session.resource.toString() === uri.toString()) {
+				// Return some basic content for the session
+				const content = `Chat Session: ${uri.path}\n\nThis is the content of the session.`;
+				return new TextEncoder().encode(content);
+			}
+		}
+		throw vscode.FileSystemError.FileNotFound(uri);
+	}
+
+	writeFile(_uri: vscode.Uri, _content: Uint8Array, _options: { create: boolean; overwrite: boolean }): void {
+		throw vscode.FileSystemError.NoPermissions('readonly');
+	}
+
+	delete(_uri: vscode.Uri): void {
+		throw vscode.FileSystemError.NoPermissions('readonly');
+	}
+
+	rename(_oldUri: vscode.Uri, _newUri: vscode.Uri): void {
+		this._onDidMoveFile.fire();
 	}
 }
 
 /**
  * Create a custom editor for displaying chat sessions.
  */
-class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
+class MySessionCustomEditor implements vscode.CustomTextEditorProvider {
 
 	constructor(
 		private readonly context: vscode.ExtensionContext
 	) { }
 
-	openCustomDocument(
-		uri: vscode.Uri,
-		_openContext: vscode.CustomDocumentOpenContext,
-		_token: vscode.CancellationToken
-	): vscode.CustomDocument {
-		return {
-			uri,
-			dispose: () => { },
-		};
+	async moveCustomTextEditor?(_newDocument: vscode.TextDocument, _existingWebviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): Promise<void> {
+		return;
 	}
 
-	resolveCustomEditor(
-		document: vscode.CustomDocument,
-		webviewPanel: vscode.WebviewPanel,
-		_token: vscode.CancellationToken
-	): void {
+	resolveCustomTextEditor(_document: vscode.TextDocument, webviewPanel: vscode.WebviewPanel, _token: vscode.CancellationToken): Promise<void> | void {
 		webviewPanel.title = `my Chat Session`;
 		webviewPanel.iconPath = vscode.Uri.joinPath(this.context.extensionUri, 'icon.png');
 
 		webviewPanel.webview.options = {
-			enableScripts: false,
+			enableScripts: true,
 		};
 
 		webviewPanel.webview.html = this.getHtmlContent();
@@ -82,7 +149,19 @@ class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
 	</style>
 </head>
 <body>
-	<div class="content">hello world</div>
+	<div class="content">
+		<div>hello world</div>
+		<div>Counter: <span id="counter">0</span></div>
+	</div>
+	<script>
+		let count = 0;
+		const counterElement = document.getElementById('counter');
+		
+		setInterval(() => {
+			count++;
+			counterElement.textContent = count;
+		}, 1000);
+	</script>
 </body>
 </html>`;
 	}
@@ -92,10 +171,8 @@ class MySessionCustomEditor implements vscode.CustomReadonlyEditorProvider {
  * Provides the list of chat sessions
  */
 class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
-	private readonly _onDidChangeChatSessionItems =
-		new vscode.EventEmitter<void>();
-	readonly onDidChangeChatSessionItems =
-		this._onDidChangeChatSessionItems.event;
+	public readonly _onDidChangeChatSessionItems = new vscode.EventEmitter<void>();
+	public readonly onDidChangeChatSessionItems = this._onDidChangeChatSessionItems.event;
 
 	private readonly _onDidCommitChatSessionItem = new vscode.EventEmitter<{
 		original: vscode.ChatSessionItem;
@@ -103,45 +180,7 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 	}>();
 	readonly onDidCommitChatSessionItem = this._onDidCommitChatSessionItem.event;
 
-	private sessions: vscode.ChatSessionItem[] = [];
-
-	constructor() {
-		// Create some sample sessions
-		this.sessions = [
-			{
-				id: "session-1",
-				resource: vscode.Uri.parse("my-session:/session-1"),
-				label: "Chat Session 1",
-				description: "First example session",
-				status: vscode.ChatSessionStatus.Completed,
-				timing: {
-					startTime: Date.now() - 3600000, // 1 hour ago
-					endTime: Date.now() - 3000000,
-				},
-			},
-			{
-				id: "session-2",
-				resource: vscode.Uri.parse("my-session:/session-2"),
-				label: "Chat Session 2",
-				description: "Second example session",
-				status: vscode.ChatSessionStatus.InProgress,
-				timing: {
-					startTime: Date.now() - 1800000, // 30 minutes ago
-				},
-			},
-			{
-				id: "session-3",
-				resource: vscode.Uri.parse("my-session:/session-3"),
-				label: "Chat Session 3",
-				description: "Third example session",
-				status: vscode.ChatSessionStatus.Failed,
-				timing: {
-					startTime: Date.now() - 7200000, // 2 hours ago
-					endTime: Date.now() - 6000000,
-				},
-			},
-		];
-	}
+	private sessions = sampleSessions;
 
 	async provideChatSessionItems(
 		_token: vscode.CancellationToken
@@ -151,18 +190,25 @@ class MyChatSessionItemProvider implements vscode.ChatSessionItemProvider {
 }
 
 export function activate(context: vscode.ExtensionContext) {
-	// Register text document content provider for my-session scheme
+	const sessionFs = new MySessionFileSystem();
+
+	// Register readonly file system for my-session scheme
 	context.subscriptions.push(
-		vscode.workspace.registerTextDocumentContentProvider(
+		vscode.workspace.registerFileSystemProvider(
 			sessionScheme,
-			new MySessionContentProvider()
+			sessionFs,
+			{ isReadonly: false }
 		)
 	);
 
 	// Register custom editor for showing our sessions
 	const customEditor = new MySessionCustomEditor(context);
 	context.subscriptions.push(
-		vscode.window.registerCustomEditorProvider("mySession.editor", customEditor)
+		vscode.window.registerCustomEditorProvider("mySession.editor", customEditor, {
+			webviewOptions: {
+				retainContextWhenHidden: true
+			}
+		})
 	);
 
 	// Register the chat session item provider
@@ -172,6 +218,24 @@ export function activate(context: vscode.ExtensionContext) {
 	);
 
 	// Register commands
+	vscode.commands.registerCommand("chat-session-sandbox.test-move", async () => {
+		const workspaceEdit = new vscode.WorkspaceEdit();
+		const from = vscode.Uri.parse("my-session:/session-1");
+		const to = vscode.Uri.parse("my-session:/moved-session-1");
+		workspaceEdit.renameFile(from, to);
+
+		const sub = sessionFs.onDidMoveFile(() => {
+			sampleSessions[0].resource = to;
+			sub.dispose();
+		});
+
+		await vscode.workspace.applyEdit(workspaceEdit);
+
+		sub.dispose();
+
+		sessionProvider._onDidChangeChatSessionItems.fire();
+	});
+
 	vscode.commands.registerCommand("chat-session-sandbox.exampleInlineAction", () => {
 		vscode.window.showWarningMessage("Example inline action executed!");
 	});
